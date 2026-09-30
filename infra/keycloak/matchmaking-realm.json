@@ -1,0 +1,149 @@
+{
+  "realm": "matchmaking",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      {
+        "name": "service"
+      },
+      {
+        "name": "operator"
+      },
+      {
+        "name": "player"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "matchmaking-service-client",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "matchmaking-service-secret",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "roles"
+      ],
+      "protocolMappers": [
+        {
+          "name": "api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "rating-service",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "matchmaking-ops-client",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "matchmaking-ops-secret",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "roles"
+      ],
+      "protocolMappers": [
+        {
+          "name": "api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "rating-service",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "matchmaking-other-client",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "matchmaking-other-secret",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "roles"
+      ],
+      "protocolMappers": [
+        {
+          "name": "api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "other-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "scopeMappings": [
+    {
+      "client": "matchmaking-service-client",
+      "roles": [
+        "service"
+      ]
+    },
+    {
+      "client": "matchmaking-ops-client",
+      "roles": [
+        "operator"
+      ]
+    },
+    {
+      "client": "matchmaking-other-client",
+      "roles": [
+        "service"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-matchmaking-service-client",
+      "enabled": true,
+      "serviceAccountClientId": "matchmaking-service-client",
+      "realmRoles": [
+        "service"
+      ]
+    },
+    {
+      "username": "service-account-matchmaking-ops-client",
+      "enabled": true,
+      "serviceAccountClientId": "matchmaking-ops-client",
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "username": "service-account-matchmaking-other-client",
+      "enabled": true,
+      "serviceAccountClientId": "matchmaking-other-client",
+      "realmRoles": [
+        "service"
+      ]
+    }
+  ]
+}

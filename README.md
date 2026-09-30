@@ -1,29 +1,52 @@
 ## Matchmaking Arena
 
-Сервис `matchmaking-service` хранит игроков и лобби в PostgreSQL. Схему базы меняют только миграции Flyway, таблицами `players` и `lobbies` владеет только этот сервис. Вход выполняется через форму, состояние входа хранится в серверном сеансе.
+## Состав
 
-## Запуск
+- `matchmaking-service` – игроки и лобби в PostgreSQL, вход через форму и серверный сеанс (состояние работы 2).
+- `rating-service` – API рейтингов на порту 8083 с проверкой JWT и ролей.
+- `infra/keycloak/matchmaking-realm.json` – realm `matchmaking` с тремя машинными клиентами и ролями `service`, `operator`, `player`.
+
+## Запуск основного сценария
+
+Нужны JDK 21+, PowerShell 7 и Docker Desktop с Linux-контейнерами.
 
 ```powershell
-Copy-Item .env.example .env
+docker compose up -d keycloak
+docker compose logs keycloak
+Invoke-RestMethod http://localhost:8085/realms/matchmaking/.well-known/openid-configuration |
+  Select-Object issuer,token_endpoint,jwks_uri
+.\mvnw.cmd -pl rating-service spring-boot:run
+```
+
+Keycloak доступен по адресу `http://localhost:8085`, консоль администратора `http://localhost:8085/admin` (`admin` / `admin-dev-only`, только локально). Адреса `rating-service`:
+
+- `GET /internal/ratings/{playerId}` – для фонового сервиса, роль `service`;
+- `GET /internal/admin/info` – служебный, роль `operator`;
+- `GET /api/ranks` – пользовательский, роли `player` и `operator`.
+
+Машинные клиенты realm:
+
+| Клиент | Секрет | Роль | Получатель токена (aud) |
+|---|---|---|---|
+| `matchmaking-service-client` | `matchmaking-service-secret` | `service` | `rating-service` |
+| `matchmaking-ops-client` | `matchmaking-ops-secret` | `operator` | `rating-service` |
+| `matchmaking-other-client` | `matchmaking-other-secret` | `service` | `other-api` |
+
+## Сервис матчмейкинга
+
+```powershell
 docker compose up -d postgres
 .\mvnw.cmd -pl matchmaking-service spring-boot:run "-Dspring-boot.run.profiles=session-auth"
 ```
 
-Сервис доступен по адресу `http://localhost:8080`. PostgreSQL из контейнера слушает порт `5433`. Страница входа находится по адресу `http://localhost:8080/login`. Учебные пользователи:
+Его пользователи `player` и `operator` хранятся в памяти приложения и с Keycloak не связаны. PostgreSQL из контейнера слушает порт `5433`.
 
-- `player/player` с ролью `PLAYER`: чтение игроков и лобби, создание лобби;
-- `operator/operator` с ролями `PLAYER` и `OPERATOR`: дополнительно создание игроков и диагностика.
+## Изменение realm и остановка
 
-Без входа доступен только `GET /api/public/status`. Диагностика `GET /api/diagnostics` открыта только оператору.
-
-Endpoint `GET /csrf` возвращает CSRF token для PowerShell-сценария и доверенного браузерного клиента. Изменяющие запросы требуют одновременно session cookie, подходящую роль и заголовок `X-XSRF-TOKEN`.
-
-## Проверка
+При обычном повторном старте существующий realm не перезаписывается. После изменения JSON:
 
 ```powershell
-.\mvnw.cmd test
-docker compose exec postgres psql -U course -d matchmaking -c "select * from flyway_schema_history;"
+docker compose up -d --force-recreate keycloak
 ```
 
-Для остановки инфраструктуры выполните `docker compose down`. Данные сохраняются в именованном томе; команда `docker compose down -v` удалит их и нужна только для осознанного повторения работы с чистой базой.
+Проверка: `.\mvnw.cmd test`. Остановка: `docker compose down`.

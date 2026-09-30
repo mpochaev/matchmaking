@@ -1,0 +1,11 @@
+server:
+  port: ${SERVER_PORT:8083}
+spring:
+  application:
+    name: rating-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER:http://localhost:8085/realms/matchmaking}
+          audiences: rating-service

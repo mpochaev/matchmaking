@@ -1,4 +1,4 @@
-name: matchmaking-arena-lab02
+name: matchmaking-arena-lab03
 
 services:
   postgres:
@@ -16,6 +16,18 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.2
+    command: ["start-dev", "--import-realm", "--health-enabled=true"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin-dev-only
+      KC_HOSTNAME: http://localhost:8085
+    ports:
+      - "127.0.0.1:8085:8080"
+    volumes:
+      - ./infra/keycloak/matchmaking-realm.json:/opt/keycloak/data/import/matchmaking-realm.json:ro
 
 volumes:
   postgres-data:

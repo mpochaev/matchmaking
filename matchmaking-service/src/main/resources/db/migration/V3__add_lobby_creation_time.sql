@@ -1,0 +1,12 @@
+ALTER TABLE lobbies
+    ADD COLUMN created_at TIMESTAMP WITH TIME ZONE NULL;
+
+ALTER TABLE lobbies
+    ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;
+
+UPDATE lobbies
+SET created_at = CURRENT_TIMESTAMP
+WHERE created_at IS NULL;
+
+ALTER TABLE lobbies
+    ALTER COLUMN created_at SET NOT NULL;

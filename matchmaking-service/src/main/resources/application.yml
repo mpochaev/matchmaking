@@ -1,0 +1,19 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: matchmaking-service
+  datasource:
+    url: ${MATCHMAKING_DB_URL:jdbc:postgresql://localhost:5433/matchmaking}
+    username: ${DB_USER:course}
+    password: ${DB_PASSWORD:course-dev-only}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 1000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true

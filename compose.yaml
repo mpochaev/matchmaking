@@ -1,4 +1,4 @@
-name: matchmaking-arena-lab01
+name: matchmaking-arena-lab02
 
 services:
   postgres:

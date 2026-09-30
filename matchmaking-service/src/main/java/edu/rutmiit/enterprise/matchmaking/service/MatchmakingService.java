@@ -3,6 +3,7 @@ package edu.rutmiit.enterprise.matchmaking.service;
 import edu.rutmiit.enterprise.matchmaking.api.ApiException;
 import edu.rutmiit.enterprise.matchmaking.api.CreateLobbyRequest;
 import edu.rutmiit.enterprise.matchmaking.api.CreatePlayerRequest;
+import edu.rutmiit.enterprise.matchmaking.api.DiagnosticsResponse;
 import edu.rutmiit.enterprise.matchmaking.api.LobbyResponse;
 import edu.rutmiit.enterprise.matchmaking.api.PlayerResponse;
 import edu.rutmiit.enterprise.matchmaking.domain.LobbyEntity;
@@ -73,6 +74,11 @@ public class MatchmakingService {
         LobbyEntity lobby = lobbyRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Лобби не найдено"));
         return toResponse(lobby);
+    }
+
+    @Transactional(readOnly = true)
+    public DiagnosticsResponse diagnostics() {
+        return new DiagnosticsResponse(playerRepository.count(), lobbyRepository.count());
     }
 
     private PlayerResponse toResponse(PlayerEntity player) {

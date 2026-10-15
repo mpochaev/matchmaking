@@ -1,0 +1,48 @@
+server:
+  port: ${SERVER_PORT:8088}
+  reactive:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
+
+spring:
+  application:
+    name: gateway-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  session:
+    timeout: 30m
+    data:
+      redis:
+        namespace: matchmaking:gateway:sessions
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: ${OIDC_ISSUER:http://localhost:8085/realms/matchmaking}
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: matchmaking-bff
+            client-secret: matchmaking-bff-secret
+            authorization-grant-type: authorization_code
+            scope: openid,profile,email
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 500
+            response-timeout: 3s
+          routes:
+            - id: matchmaking
+              uri: ${MATCHMAKING_URL:http://localhost:8080}
+              predicates:
+                - Path=/api/players,/api/players/**,/api/lobbies,/api/lobbies/**
+              filters:
+                - TokenRelay=

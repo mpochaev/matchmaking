@@ -11,6 +11,12 @@ server:
 spring:
   application:
     name: matchmaking-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER:http://localhost:8085/realms/matchmaking}
+          audiences: matchmaking-service
   datasource:
     url: ${MATCHMAKING_DB_URL:jdbc:postgresql://localhost:5433/matchmaking}
     username: ${DB_USER:course}

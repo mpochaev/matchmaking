@@ -2,51 +2,35 @@
 
 ## Состав
 
-- `matchmaking-service` – игроки и лобби в PostgreSQL, вход через форму и серверный сеанс (состояние работы 2).
-- `rating-service` – API рейтингов на порту 8083 с проверкой JWT и ролей.
-- `infra/keycloak/matchmaking-realm.json` – realm `matchmaking` с тремя машинными клиентами и ролями `service`, `operator`, `player`.
+- `matchmaking-service` – игроки и лобби в PostgreSQL. Без профиля работает как JWT Resource Server (audience `matchmaking-service`), с профилем `session-auth` – как в работе 2.
+- `rating-service` – API рейтингов на порту 8083 с проверкой JWT (работа 3), в основном сценарии не запускается.
+- `gateway-service` – API Gateway и Web BFF на порту 8088: вход через Keycloak, сеансы в Redis, Token Relay.
+- `infra/keycloak/matchmaking-realm.json` – realm `matchmaking`: клиент `matchmaking-bff`, пользователи `player` и `operator`, машинные клиенты работы 3.
 
-## Запуск основного сценария
+## Запуск
 
-Нужны JDK 21+, PowerShell 7 и Docker Desktop с Linux-контейнерами.
+Остановите Java-процессы и Compose предыдущего снимка. В каталоге проекта выполните:
 
 ```powershell
-docker compose up -d keycloak
-docker compose logs keycloak
+docker compose up -d postgres redis keycloak
+docker compose ps
 Invoke-RestMethod http://localhost:8085/realms/matchmaking/.well-known/openid-configuration |
-  Select-Object issuer,token_endpoint,jwks_uri
-.\mvnw.cmd -pl rating-service spring-boot:run
+  Select-Object issuer
+.\mvnw.cmd test
 ```
 
-Keycloak доступен по адресу `http://localhost:8085`, консоль администратора `http://localhost:8085/admin` (`admin` / `admin-dev-only`, только локально). Адреса `rating-service`:
-
-- `GET /internal/ratings/{playerId}` – для фонового сервиса, роль `service`;
-- `GET /internal/admin/info` – служебный, роль `operator`;
-- `GET /api/ranks` – пользовательский, роли `player` и `operator`.
-
-Машинные клиенты realm:
-
-| Клиент | Секрет | Роль | Получатель токена (aud) |
-|---|---|---|---|
-| `matchmaking-service-client` | `matchmaking-service-secret` | `service` | `rating-service` |
-| `matchmaking-ops-client` | `matchmaking-ops-secret` | `operator` | `rating-service` |
-| `matchmaking-other-client` | `matchmaking-other-secret` | `service` | `other-api` |
-
-## Сервис матчмейкинга
+Последнюю команду `Invoke-RestMethod` повторяйте, пока Keycloak не ответит: gateway требует OIDC metadata уже при запуске. В двух отдельных терминалах из того же каталога запустите:
 
 ```powershell
-docker compose up -d postgres
-.\mvnw.cmd -pl matchmaking-service spring-boot:run "-Dspring-boot.run.profiles=session-auth"
+.\mvnw.cmd -pl matchmaking-service spring-boot:run
 ```
-
-Его пользователи `player` и `operator` хранятся в памяти приложения и с Keycloak не связаны. PostgreSQL из контейнера слушает порт `5433`.
-
-## Изменение realm и остановка
-
-При обычном повторном старте существующий realm не перезаписывается. После изменения JSON:
 
 ```powershell
-docker compose up -d --force-recreate keycloak
+.\mvnw.cmd -pl gateway-service spring-boot:run
 ```
 
-Проверка: `.\mvnw.cmd test`. Остановка: `docker compose down`.
+Откройте `http://localhost:8088` и войдите как `operator/operator` либо `player/player`. Роль `player` позволяет читать игроков и лобби и создавать лобби, роль `operator` – также регистрировать игроков. В браузерных DevTools токена в Local Storage быть не должно. `/api/players` и `/api/lobbies` через gateway используют Token Relay; прямой запрос к `http://localhost:8080/api/players` без `Authorization` получает `401`. POST через gateway требует CSRF header, полученный из `/bff/csrf`.
+
+Если порт 8088 уже занят, можно запустить gateway с `$env:SERVER_PORT='18088'` и открыть `http://localhost:18088`: оба точных redirect URI зарегистрированы в realm. Если Docker исчерпал автоматический пул подсетей, только после проверки пересечений с локальными/VPN сетями примените `docker compose -f compose.yaml -f compose.local-network.yaml up -d postgres redis keycloak`. При дальнейшем управлении этим Compose-проектом повторяйте оба `-f`.
+
+Изменения `infra/keycloak/matchmaking-realm.json` подхватываются при пересоздании контейнера Keycloak: `docker compose up -d --force-recreate keycloak`. Не используйте `down -v`, если хотите сохранить данные PostgreSQL и Redis. Для обычной остановки выполните `docker compose down`.

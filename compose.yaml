@@ -1,4 +1,4 @@
-name: matchmaking-arena-lab03
+name: matchmaking-arena-lab05
 
 services:
   postgres:
@@ -29,5 +29,18 @@ services:
     volumes:
       - ./infra/keycloak/matchmaking-realm.json:/opt/keycloak/data/import/matchmaking-realm.json:ro
 
+  redis:
+    image: redis:8.2-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
 volumes:
   postgres-data:
+  redis-data:

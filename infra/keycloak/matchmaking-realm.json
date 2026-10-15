@@ -7,17 +7,44 @@
   "roles": {
     "realm": [
       {
-        "name": "service"
+        "name": "player"
       },
       {
         "name": "operator"
       },
       {
-        "name": "player"
+        "name": "service"
       }
     ]
   },
   "clients": [
+    {
+      "clientId": "matchmaking-bff",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "matchmaking-bff-secret",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false,
+      "redirectUris": ["http://localhost:8088/login/oauth2/code/keycloak", "http://localhost:18088/login/oauth2/code/keycloak"],
+      "webOrigins": ["http://localhost:8088", "http://localhost:18088"],
+      "defaultClientScopes": ["web-origins", "profile", "roles", "email"],
+      "protocolMappers": [
+        {
+          "name": "aud-matchmaking",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "matchmaking-service",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
     {
       "clientId": "matchmaking-service-client",
       "protocol": "openid-connect",
@@ -102,6 +129,10 @@
   ],
   "scopeMappings": [
     {
+      "client": "matchmaking-bff",
+      "roles": ["player", "operator"]
+    },
+    {
       "client": "matchmaking-service-client",
       "roles": [
         "service"
@@ -121,6 +152,26 @@
     }
   ],
   "users": [
+    {
+      "username": "player",
+      "firstName": "Arena",
+      "lastName": "Player",
+      "enabled": true,
+      "email": "player@example.test",
+      "emailVerified": true,
+      "credentials": [{"type": "password", "value": "player", "temporary": false}],
+      "realmRoles": ["player"]
+    },
+    {
+      "username": "operator",
+      "firstName": "Arena",
+      "lastName": "Operator",
+      "enabled": true,
+      "email": "operator@example.test",
+      "emailVerified": true,
+      "credentials": [{"type": "password", "value": "operator", "temporary": false}],
+      "realmRoles": ["player", "operator"]
+    },
     {
       "username": "service-account-matchmaking-service-client",
       "enabled": true,

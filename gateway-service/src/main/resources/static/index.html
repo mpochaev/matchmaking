@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Matchmaking Arena – веб-клиент</title>
+  <style>body{max-width:900px;margin:2rem auto;padding:0 1rem;font-family:system-ui}button{padding:.6rem;margin:.3rem}pre{padding:1rem;background:#17212d;color:white}</style>
+</head>
+<body>
+<h1>Matchmaking Arena</h1>
+<p>Вход выполняется через Keycloak. Браузер передаёт gateway cookie SESSION; токен для сервиса матчмейкинга остаётся на сервере.</p>
+<a href="/oauth2/authorization/keycloak">Войти через Keycloak</a>
+<button data-url="/bff/me">Текущий пользователь</button>
+<button data-url="/api/players">Игроки</button>
+<button data-url="/api/lobbies">Лобби</button>
+<pre id="output">После входа нажмите кнопку.</pre>
+<script>
+  const output = document.getElementById('output');
+  document.querySelectorAll('button[data-url]').forEach(button => button.addEventListener('click', async () => {
+    const response = await fetch(button.dataset.url, {credentials:'same-origin'});
+    output.textContent = response.status + '\n' + await response.text();
+  }));
+</script>
+</body>
+</html>

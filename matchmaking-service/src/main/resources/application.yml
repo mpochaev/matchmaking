@@ -17,6 +17,16 @@ spring:
         jwt:
           issuer-uri: ${OIDC_ISSUER:http://localhost:8085/realms/matchmaking}
           audiences: matchmaking-service
+      client:
+        provider:
+          keycloak:
+            token-uri: ${OIDC_TOKEN_URI:http://localhost:8085/realms/matchmaking/protocol/openid-connect/token}
+        registration:
+          rating:
+            provider: keycloak
+            client-id: ${SERVICE_CLIENT_ID:matchmaking-service-client}
+            client-secret: ${SERVICE_CLIENT_SECRET:matchmaking-service-secret}
+            authorization-grant-type: client_credentials
   datasource:
     url: ${MATCHMAKING_DB_URL:jdbc:postgresql://localhost:5433/matchmaking}
     username: ${DB_USER:course}
@@ -30,3 +40,43 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+
+app:
+  rating:
+    base-url: ${RATING_URL:http://localhost:8083}
+
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  observations:
+    enable:
+      spring.security: false
+  tracing:
+    propagation:
+      type: w3c
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  opentelemetry:
+    resource-attributes:
+      deployment.environment.name: local
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+
+logging:
+  file:
+    name: ${LOG_DIR:../runtime-logs}/matchmaking-service.log
+  include-application-name: false
+  pattern:
+    correlation: "[${spring.application.name:},trace_id=%X{traceId:-},span_id=%X{spanId:-},request_id=%X{requestId:-}] "

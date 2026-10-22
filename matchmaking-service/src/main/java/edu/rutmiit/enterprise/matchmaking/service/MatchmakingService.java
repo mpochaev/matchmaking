@@ -47,6 +47,13 @@ public class MatchmakingService {
         return playerRepository.findAll().stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
+    public PlayerResponse player(UUID id) {
+        PlayerEntity player = playerRepository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Игрок не найден"));
+        return toResponse(player);
+    }
+
     @Transactional
     public LobbyResponse createLobby(CreateLobbyRequest request) {
         if (lobbyRepository.existsByCode(request.code())) {

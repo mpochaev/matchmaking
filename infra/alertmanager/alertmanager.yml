@@ -1,0 +1,10 @@
+route:
+  receiver: local-only
+  group_by: [alertname, job]
+  group_wait: 5s
+  group_interval: 30s
+  repeat_interval: 4h
+
+# Для локального занятия alerts доступны в UI/API. Внешних отправок нет.
+receivers:
+  - name: local-only

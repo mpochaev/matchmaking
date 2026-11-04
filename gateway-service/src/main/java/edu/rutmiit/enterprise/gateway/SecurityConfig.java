@@ -20,7 +20,8 @@ public class SecurityConfig {
         return http
                 .authorizeExchange(auth -> auth
                         .pathMatchers("/", "/index.html", "/favicon.ico", "/bff/csrf",
-                                "/oauth2/**", "/login/**", "/actuator/health", "/actuator/health/**").permitAll()
+                                "/oauth2/**", "/login/**", "/actuator/health", "/actuator/health/**",
+                                "/actuator/prometheus", "/livez", "/readyz").permitAll()
                         .anyExchange().authenticated())
                 .oauth2Login(Customizer.withDefaults())
                 .oauth2Client(Customizer.withDefaults())

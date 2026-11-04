@@ -19,7 +19,8 @@ public class OAuthSecurityConfig {
         converter.setJwtGrantedAuthoritiesConverter(new JwtRoleConverter());
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**",
+                                "/actuator/prometheus", "/livez", "/readyz").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // This API accepts explicitly supplied Bearer credentials, not browser session cookies.

@@ -1,0 +1,19 @@
+local.file_match "matchmaking_logs" {
+  path_targets = [
+    {"__path__" = "/var/log/matchmaking/gateway-service.log", "job" = "matchmaking-apps", "service" = "gateway-service"},
+    {"__path__" = "/var/log/matchmaking/matchmaking-service.log", "job" = "matchmaking-apps", "service" = "matchmaking-service"},
+    {"__path__" = "/var/log/matchmaking/rating-service.log", "job" = "matchmaking-apps", "service" = "rating-service"},
+  ]
+  sync_period = "5s"
+}
+
+loki.source.file "matchmaking_logs" {
+  targets    = local.file_match.matchmaking_logs.targets
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

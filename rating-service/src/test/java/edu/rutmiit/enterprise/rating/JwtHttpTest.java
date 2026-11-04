@@ -18,7 +18,8 @@ import java.time.Instant;
 import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "management.server.port=0")
 class JwtHttpTest {
     static final RSAKey KEY;
     static final HttpServer JWKS;
@@ -83,6 +84,29 @@ class JwtHttpTest {
         assertThat(call("/api/ranks", service)).isEqualTo(403);
         assertThat(call(RATING, player)).isEqualTo(403);
         assertThat(call("/internal/admin/info", player)).isEqualTo(403);
+    }
+
+    @Test void diagnosticModeRequiresOperatorAndDoesNotGrantBusinessAccess() throws Exception {
+        String service = token(KEY, ISSUER, "rating-service", "service", 300, -5);
+        String operator = token(KEY, ISSUER, "rating-service", "operator", 300, -5);
+        assertThat(changeMode(service, "FAIL")).isEqualTo(403);
+        assertThat(changeMode(operator, "FAIL")).isEqualTo(200);
+        try {
+            assertThat(call(RATING, service)).isEqualTo(503);
+            assertThat(call(RATING, operator)).isEqualTo(403);
+        } finally {
+            assertThat(changeMode(operator, "NORMAL")).isEqualTo(200);
+        }
+    }
+
+    private int changeMode(String token, String mode) throws Exception {
+        try (var client = HttpClient.newHttpClient()) {
+            var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port
+                            + "/internal/admin/failure-mode?mode=" + mode))
+                    .header("Authorization", "Bearer " + token)
+                    .PUT(HttpRequest.BodyPublishers.noBody()).build();
+            return client.send(request, HttpResponse.BodyHandlers.discarding()).statusCode();
+        }
     }
 
     private int call(String path, String token) throws Exception {

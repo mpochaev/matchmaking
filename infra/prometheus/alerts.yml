@@ -1,0 +1,38 @@
+groups:
+  - name: matchmaking-rating
+    rules:
+      - record: matchmaking:rating_requests:rate1m
+        expr: sum(rate(http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status=~"2..|5.."}[1m]))
+      - record: matchmaking:rating_errors:rate1m
+        expr: sum(rate(http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status=~"5.."}[1m])) or (0 * matchmaking:rating_requests:rate1m)
+      - record: matchmaking:rating_error_ratio:rate1m
+        expr: matchmaking:rating_errors:rate1m / matchmaking:rating_requests:rate1m
+      - record: matchmaking:rating_requests:increase1m
+        expr: sum(increase(http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status=~"2..|5.."}[1m]))
+      - record: matchmaking:rating_good_ratio:rate5m
+        expr: |
+          (sum(rate(http_server_requests_seconds_bucket{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status="200",le="0.5"}[5m]))
+          or (0 * sum(rate(http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status=~"2..|5.."}[5m]))))
+          / sum(rate(http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status=~"2..|5.."}[5m]))
+      - alert: MatchmakingRatingHighErrorRatio
+        expr: matchmaking:rating_error_ratio:rate1m > 0.2 and matchmaking:rating_requests:increase1m >= 10
+        for: 20s
+        labels:
+          job: rating-service
+          severity: warning
+          team: matchmaking
+        annotations:
+          summary: "Доля 5xx рейтинга выше 20 процентов"
+          description: "Учебное правило: окно 1 минута, не менее 10 запросов, выдержка 20 секунд."
+          dashboard_url: "http://localhost:3000/d/matchmaking-golden-signals"
+          runbook_url: "http://localhost:3000/d/matchmaking-golden-signals?viewPanel=9"
+      - alert: MatchmakingScrapeTargetDown
+        expr: up{job=~"gateway-service|matchmaking-service|rating-service"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          team: matchmaking
+        annotations:
+          summary: "Prometheus не получает метрики {{ $labels.job }}"
+          dashboard_url: "http://localhost:3000/d/matchmaking-golden-signals"
+          runbook_url: "http://localhost:3000/d/matchmaking-golden-signals?viewPanel=9"

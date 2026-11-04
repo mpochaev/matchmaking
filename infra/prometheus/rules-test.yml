@@ -1,0 +1,80 @@
+rule_files:
+  - alerts.yml
+evaluation_interval: 5s
+tests:
+  - name: healthy-no-5xx-series
+    interval: 5s
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status="200"}'
+        values: '0+10x36'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: MatchmakingRatingHighErrorRatio
+        exp_alerts: []
+    promql_expr_test:
+      - expr: matchmaking:rating_error_ratio:rate1m
+        eval_time: 1m
+        exp_samples:
+          - labels: '{__name__="matchmaking:rating_error_ratio:rate1m"}'
+            value: 0
+  - name: no-traffic
+    interval: 5s
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status="200"}'
+        values: '0+0x36'
+      - series: 'http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status="503"}'
+        values: '0+0x36'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: MatchmakingRatingHighErrorRatio
+        exp_alerts: []
+  - name: too-few-requests
+    interval: 5s
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status="503"}'
+        values: '0+0.1x36'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: MatchmakingRatingHighErrorRatio
+        exp_alerts: []
+  - name: pending-firing-recovered
+    interval: 5s
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status="200"}'
+        values: '0+5x12 60+10x24'
+      - series: 'http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status="503"}'
+        values: '0+5x12 60+0x24'
+    alert_rule_test:
+      - eval_time: 15s
+        alertname: MatchmakingRatingHighErrorRatio
+        exp_alerts: []
+      - eval_time: 1m
+        alertname: MatchmakingRatingHighErrorRatio
+        exp_alerts:
+          - exp_labels:
+              job: rating-service
+              severity: warning
+              team: matchmaking
+            exp_annotations:
+              summary: "Доля 5xx рейтинга выше 20 процентов"
+              description: "Учебное правило: окно 1 минута, не менее 10 запросов, выдержка 20 секунд."
+              dashboard_url: "http://localhost:3000/d/matchmaking-golden-signals"
+              runbook_url: "http://localhost:3000/d/matchmaking-golden-signals?viewPanel=9"
+      - eval_time: 3m
+        alertname: MatchmakingRatingHighErrorRatio
+        exp_alerts: []
+  - name: good-sli-counts-only-fast-success
+    interval: 5s
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status="200"}'
+        values: '0+8x36'
+      - series: 'http_server_requests_seconds_count{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status="503"}'
+        values: '0+2x36'
+      - series: 'http_server_requests_seconds_bucket{job="rating-service",method="GET",uri="/internal/ratings/{playerId}",status="200",le="0.5"}'
+        values: '0+6x36'
+    promql_expr_test:
+      - expr: matchmaking:rating_good_ratio:rate5m
+        eval_time: 2m
+        exp_samples:
+          - labels: '{__name__="matchmaking:rating_good_ratio:rate5m"}'
+            value: 0.6

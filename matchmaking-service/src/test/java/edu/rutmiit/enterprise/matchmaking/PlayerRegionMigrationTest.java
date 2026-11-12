@@ -35,6 +35,7 @@ class PlayerRegionMigrationTest {
         Flyway allMigrations = Flyway.configure()
                 .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                 .locations("classpath:db/migration")
+                .target("5")
                 .load();
 
         assertThat(allMigrations.migrate().migrationsExecuted).isOne();

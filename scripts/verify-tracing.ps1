@@ -1,6 +1,6 @@
-﻿param(
+param(
     [string]$GatewayUrl = 'http://localhost:8088',
-    [string]$TempoUrl = 'http://localhost:3200'
+    [string]$TempoUrl = 'http://127.0.0.1:3200'
 )
 $ErrorActionPreference = 'Stop'
 if ($PSVersionTable.PSVersion.Major -lt 7) { throw 'Нужен PowerShell 7.' }

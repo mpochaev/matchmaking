@@ -66,5 +66,16 @@ class SchemaMigrationTest {
                 assertThat(result.getObject("created_at")).isNotNull();
             }
         }
+        Flyway latest = Flyway.configure()
+                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .locations("classpath:db/migration").load();
+        assertThat(latest.migrate().migrationsExecuted).isEqualTo(3);
+        try (var connection = DriverManager.getConnection(
+                POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+             var statement = connection.createStatement();
+             var result = statement.executeQuery("select count(*) from player_idempotency")) {
+            assertThat(result.next()).isTrue();
+            assertThat(result.getInt(1)).isZero();
+        }
     }
 }

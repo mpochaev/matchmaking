@@ -1,0 +1,44 @@
+{
+  "uid": "matchmaking-retry-budget",
+  "title": "Matchmaking Retry Budget",
+  "schemaVersion": 41,
+  "version": 1,
+  "tags": ["matchmaking", "lab08"],
+  "refresh": "5s",
+  "time": {"from": "now-15m", "to": "now"},
+  "panels": [
+    {
+      "id": 1, "title": "Логические вызовы рейтинга по результату", "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "reqps", "min": 0}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "sum by (result) (rate(matchmaking_rating_operations_total{job=\"matchmaking-service\"}[1m]))", "legendFormat": "{{result}}"}]
+    },
+    {
+      "id": 2, "title": "Попытки HTTP по результату", "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "reqps", "min": 0}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "sum by (result) (rate(matchmaking_rating_attempts_total{job=\"matchmaking-service\"}[1m]))", "legendFormat": "{{result}}"}]
+    },
+    {
+      "id": 3, "title": "Дополнительные попытки в секунду", "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "reqps", "min": 0}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "sum(rate(matchmaking_rating_retries_total{job=\"matchmaking-service\"}[1m]))", "legendFormat": "retry"}]
+    },
+    {
+      "id": 4, "title": "Попыток на логический вызов, окно 1 минута", "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "sum(rate(matchmaking_rating_attempts_total{job=\"matchmaking-service\"}[1m])) / sum(rate(matchmaking_rating_operations_total{job=\"matchmaking-service\"}[1m]))", "legendFormat": "attempt amplification"}]
+    },
+    {
+      "id": 5, "title": "Границы измерения и восстановление", "type": "text",
+      "gridPos": {"x": 0, "y": 16, "w": 24, "h": 7},
+      "options": {"mode": "markdown", "content": "Операции считаются внутри RatingRetry после получения сервисного токена. Ошибка токена до входа в него видна в HTTP-метрике маршрута и логах, но не в этих счётчиках. Без трафика отношение не определено. Короткое окно и незавершённые вызовы могут искажать отношение на границе окна.\n\nПроверяйте ровно две попытки по одному requestId и два разных HTTP client span в Tempo. При сетевом тайм-ауте ожидается 504, при отключённом proxy 502. Резервного успешного ответа здесь нет. Для восстановления: scripts/set-network-fault.ps1 -Mode NORMAL, затем scripts/invoke-rating.ps1. Вмешательство относится только к rating proxy и toxic matchmaking-lab08-latency.\n\nЛокальный бюджет повторов 2600 мс ограничивает допуск новых попыток. Это не сквозная отмена и не откат уже выполненной удалённой работы."}
+    }
+  ]
+}

@@ -22,27 +22,27 @@ $null = & "$PSScriptRoot/set-diagnostic-mode.ps1" -Mode NORMAL
 $chain = & "$PSScriptRoot/verify-tracing.ps1" -GatewayUrl $GatewayUrl
 $null = & "$PSScriptRoot/generate-traffic.ps1" -Count 15 -IntervalMs 100
 $auth = 'Basic '+[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('admin:admin-dev-only'))
-$sources = @(Invoke-RestMethod -Headers @{Authorization=$auth} http://localhost:3000/api/datasources)
+$sources = @(Invoke-RestMethod -Headers @{Authorization=$auth} http://127.0.0.1:3000/api/datasources)
 foreach ($uid in @('prometheus','loki','tempo')) {
     if ($uid -notin $sources.uid) { throw "В Grafana нет datasource $uid." }
     if ($uid -eq 'tempo') {
         # Tempo plugin does not implement Grafana's generic health API in this version.
         $ready = Invoke-WebRequest -Headers @{Authorization=$auth} `
-            http://localhost:3000/api/datasources/proxy/uid/tempo/ready
+            http://127.0.0.1:3000/api/datasources/proxy/uid/tempo/ready
         if ($ready.StatusCode -ne 200) { throw 'Tempo недоступен из Grafana.' }
     } else {
-        $health = Invoke-RestMethod -Headers @{Authorization=$auth} "http://localhost:3000/api/datasources/uid/$uid/health"
+        $health = Invoke-RestMethod -Headers @{Authorization=$auth} "http://127.0.0.1:3000/api/datasources/uid/$uid/health"
         if ($health.status -ne 'OK') { throw "Источник $uid недоступен из Grafana." }
     }
 }
-$dashboard = Invoke-RestMethod -Headers @{Authorization=$auth} http://localhost:3000/api/dashboards/uid/matchmaking-golden-signals
+$dashboard = Invoke-RestMethod -Headers @{Authorization=$auth} http://127.0.0.1:3000/api/dashboards/uid/matchmaking-golden-signals
 if ($dashboard.dashboard.panels.Count -lt 9) { throw 'Dashboard не загружен.' }
 
 # Ждем два scrape и поступления файлов через Alloy, а не предполагаем синхронный экспорт.
 $logsReady = $false
 for ($i=0; $i -lt 12; $i++) {
     $logQuery = '{job="matchmaking-apps"} | json | requestId="'+$chain.RequestId+'" | traceId="'+$chain.TraceId+'"'
-    $logs = Invoke-RestMethod ('http://localhost:3100/loki/api/v1/query_range?limit=100&query='+[uri]::EscapeDataString($logQuery))
+    $logs = Invoke-RestMethod ('http://127.0.0.1:3100/loki/api/v1/query_range?limit=100&query='+[uri]::EscapeDataString($logQuery))
     $services = @($logs.data.result | ForEach-Object {$_.stream.service} | Sort-Object -Unique)
     if (@('gateway-service','matchmaking-service','rating-service' | Where-Object {$_ -notin $services}).Count -eq 0) {
         $logsReady = $true; break
@@ -68,7 +68,7 @@ if (-not $example) { throw 'Нет exemplar с trace ID для маршрута 
 $exemplarTraceId = $example.labels.trace_id
 $exampleAvailable = $false
 for ($i=0; $i -lt 12; $i++) {
-    $trace = Invoke-WebRequest -Uri "http://localhost:3200/api/traces/$exemplarTraceId" `
+    $trace = Invoke-WebRequest -Uri "http://127.0.0.1:3200/api/traces/$exemplarTraceId" `
         -Headers @{Accept='application/json'} -SkipHttpErrorCheck
     if ($trace.StatusCode -eq 200) { $exampleAvailable=$true; break }
     Start-Sleep -Seconds 2
@@ -91,7 +91,7 @@ if (-not $SkipFaultExperiment) {
         if (-not $firing) { throw 'Правило не перешло в firing при устойчивой доле 503.' }
         $delivered = $false
         for ($i=0; $i -lt 8; $i++) {
-            $received = @(Invoke-RestMethod http://localhost:9093/api/v2/alerts)
+            $received = @(Invoke-RestMethod http://127.0.0.1:9093/api/v2/alerts)
             if (@($received | Where-Object {$_.labels.alertname -eq 'MatchmakingRatingHighErrorRatio'}).Count) {
                 $delivered = $true; break
             }

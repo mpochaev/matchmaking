@@ -1,6 +1,8 @@
 package edu.rutmiit.enterprise.matchmaking.api;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -11,6 +13,18 @@ import java.net.URI;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    ProblemDetail handleMissingHeader(MissingRequestHeaderException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Отсутствует обязательный заголовок " + exception.getHeaderName());
+    }
+
+    @ExceptionHandler(CannotAcquireLockException.class)
+    ProblemDetail handleConcurrentCommand() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "Конкурирующая команда ещё выполняется; согласуйте результат или повторите с тем же ключом позже");
+    }
+
     @ExceptionHandler(ApiException.class)
     ProblemDetail handleApiException(ApiException exception) {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(exception.getStatus(), exception.getMessage());

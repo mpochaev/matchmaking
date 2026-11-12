@@ -51,9 +51,10 @@ public class RequestIdWebFilter implements WebFilter {
         return Mono.defer(() -> {
             log.info("HTTP request method={} path={}", request.getMethod(), request.getPath().value());
             return chain.filter(correlatedExchange)
-                    .doOnSuccess(unused -> log.info("HTTP response status={}", exchange.getResponse().getStatusCode()))
+                    .doOnSuccess(unused -> log.info("HTTP response status={}",
+                            exchange.getResponse().getStatusCode() == null
+                                    ? 200 : exchange.getResponse().getStatusCode().value()))
                     .doOnError(failure -> log.warn("HTTP request failed type={}", failure.getClass().getSimpleName()));
         }).contextWrite(context -> context.put("requestId", requestId));
     }
 }
-

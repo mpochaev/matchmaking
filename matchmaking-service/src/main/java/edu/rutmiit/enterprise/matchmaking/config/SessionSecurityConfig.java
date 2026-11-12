@@ -1,5 +1,6 @@
 package edu.rutmiit.enterprise.matchmaking.config;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -11,7 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 @Profile("session-auth")
@@ -25,14 +26,16 @@ public class SessionSecurityConfig {
 
     @Bean
     SecurityFilterChain sessionSecurityFilterChain(HttpSecurity http) throws Exception {
-        CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        HttpSessionCsrfTokenRepository csrfRepository = new HttpSessionCsrfTokenRepository();
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login", "/api/public/**").permitAll()
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        .requestMatchers("/login", "/api/public/**", "/actuator/health", "/actuator/health/**",
+                                "/actuator/prometheus", "/livez", "/readyz").permitAll()
                         .anyRequest().authenticated())
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfRepository))
                 .formLogin(form -> form.defaultSuccessUrl("/api/lobbies", true))
-                .logout(logout -> logout.deleteCookies("JSESSIONID", "XSRF-TOKEN"))
+                .logout(logout -> logout.deleteCookies("JSESSIONID"))
                 .sessionManagement(session -> session
                         .sessionFixation(fixation -> fixation.migrateSession())
                         .maximumSessions(1));

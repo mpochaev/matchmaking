@@ -1,6 +1,15 @@
-name: matchmaking-arena-lab07
+name: matchmaking-arena-lab08
 
 services:
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.13.0
+    command: ["-host=0.0.0.0", "-config=/etc/toxiproxy/proxies.json"]
+    ports:
+      - "127.0.0.1:8474:8474"
+      - "127.0.0.1:8666:8666"
+    volumes:
+      - ./infra/toxiproxy/proxies.json:/etc/toxiproxy/proxies.json:ro
+
   postgres:
     image: postgres:17.6-alpine
     environment:
@@ -28,6 +37,7 @@ services:
       - "127.0.0.1:8085:8080"
     volumes:
       - ./infra/keycloak/matchmaking-realm.json:/opt/keycloak/data/import/matchmaking-realm.json:ro
+      - keycloak-data:/opt/keycloak/data
 
   redis:
     image: redis:8.2-alpine
@@ -118,6 +128,7 @@ services:
       - loki
 
 volumes:
+  keycloak-data:
   postgres-data:
   redis-data:
   tempo-data:

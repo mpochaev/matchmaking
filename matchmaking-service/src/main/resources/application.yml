@@ -2,6 +2,7 @@ server:
   port: ${SERVER_PORT:8080}
   servlet:
     session:
+      tracking-modes: cookie
       timeout: 30m
       cookie:
         http-only: true
@@ -43,7 +44,15 @@ spring:
 
 app:
   rating:
-    base-url: ${RATING_URL:http://localhost:8083}
+    base-url: ${RATING_URL:http://localhost:8666}
+    connect-timeout: 200ms
+    read-timeout: 800ms
+    budget: 2600ms
+    reserve: 100ms
+    max-attempts: 2
+    initial-wait: 150ms
+    max-wait: 1s
+    jitter: 0.5
 
 management:
   server:

@@ -7,9 +7,9 @@ $urls = @(
     'http://localhost:9088/actuator/prometheus',
     'http://localhost:9080/actuator/prometheus',
     'http://localhost:9083/actuator/prometheus',
-    'http://127.0.0.1:9090/-/ready', 'http://localhost:9093/-/ready',
-    'http://localhost:3100/ready', 'http://localhost:3200/ready',
-    'http://localhost:3000/api/health'
+    'http://127.0.0.1:9090/-/ready', 'http://127.0.0.1:9093/-/ready',
+    'http://127.0.0.1:3100/ready', 'http://127.0.0.1:3200/ready',
+    'http://127.0.0.1:3000/api/health'
 )
 foreach ($url in $urls) {
     $response = Invoke-WebRequest -Uri $url -TimeoutSec 10

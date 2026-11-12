@@ -29,9 +29,21 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "fullScopeAllowed": false,
-      "redirectUris": ["http://localhost:8088/login/oauth2/code/keycloak", "http://localhost:18088/login/oauth2/code/keycloak"],
-      "webOrigins": ["http://localhost:8088", "http://localhost:18088"],
-      "defaultClientScopes": ["web-origins", "profile", "roles", "email"],
+      "redirectUris": [
+        "http://localhost:8088/login/oauth2/code/keycloak",
+        "http://localhost:18088/login/oauth2/code/keycloak"
+      ],
+      "webOrigins": [
+        "http://localhost:8088",
+        "http://localhost:18088"
+      ],
+      "defaultClientScopes": [
+        "basic",
+        "web-origins",
+        "profile",
+        "roles",
+        "email"
+      ],
       "protocolMappers": [
         {
           "name": "aud-matchmaking",
@@ -43,7 +55,10 @@
             "access.token.claim": "true"
           }
         }
-      ]
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
     },
     {
       "clientId": "matchmaking-service-client",
@@ -57,6 +72,7 @@
       "serviceAccountsEnabled": true,
       "fullScopeAllowed": false,
       "defaultClientScopes": [
+        "basic",
         "roles"
       ],
       "protocolMappers": [
@@ -84,6 +100,7 @@
       "serviceAccountsEnabled": true,
       "fullScopeAllowed": false,
       "defaultClientScopes": [
+        "basic",
         "roles"
       ],
       "protocolMappers": [
@@ -111,6 +128,7 @@
       "serviceAccountsEnabled": true,
       "fullScopeAllowed": false,
       "defaultClientScopes": [
+        "basic",
         "roles"
       ],
       "protocolMappers": [
@@ -130,7 +148,10 @@
   "scopeMappings": [
     {
       "client": "matchmaking-bff",
-      "roles": ["player", "operator"]
+      "roles": [
+        "player",
+        "operator"
+      ]
     },
     {
       "client": "matchmaking-service-client",
@@ -159,8 +180,16 @@
       "enabled": true,
       "email": "player@example.test",
       "emailVerified": true,
-      "credentials": [{"type": "password", "value": "player", "temporary": false}],
-      "realmRoles": ["player"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "player",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "player"
+      ]
     },
     {
       "username": "operator",
@@ -169,8 +198,17 @@
       "enabled": true,
       "email": "operator@example.test",
       "emailVerified": true,
-      "credentials": [{"type": "password", "value": "operator", "temporary": false}],
-      "realmRoles": ["player", "operator"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "operator",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "player",
+        "operator"
+      ]
     },
     {
       "username": "service-account-matchmaking-service-client",
